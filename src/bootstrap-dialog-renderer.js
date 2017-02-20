@@ -44,7 +44,8 @@ BootstrapDialogRenderer.prototype.createDialogHost = function (dialogController)
 
     var view = this.templatingEngine.enhance({
         element: element,
-        bindingContext: dialogController.viewModel
+        bindingContext: dialogController.viewModel,
+		container: dialogController.view.container
     });
 
 	var dialog = $(element).modal(options);
@@ -53,13 +54,25 @@ BootstrapDialogRenderer.prototype.createDialogHost = function (dialogController)
 
 	dialogController.showDialog = () => {
 		return new Promise((resolve, reject) => {
+			var underlyingModals = $(document.body).children('.modal');
+
 			$(element).on('hidden.bs.modal', () => {
 				dialogController.hideDialog();
+			});
+
+			$(element).off('shown.bs.modal', () => {
+				$(element).off('shown.bs.modal');
 				resolve();
 			});
 
 			dialogController.slot.attached();
-			document.body.insertBefore(element, document.body.firstChild);
+
+			if (underlyingModals.length) {
+				underlyingModals.last().after(element);
+			} else {
+				document.body.insertBefore(element, document.body.firstChild);
+			}
+
 			this.dialogs.push(dialog);
 			dialog.modal('show');
 		});
